@@ -1,9 +1,6 @@
+from typing import Tuple, Union
 
-from typing import List, Optional, Tuple, Union
-import numpy as np
-import cvxpy as cp
-from Engine.Tree import *
-from Engine.BaseOptimizer import *
+from .BaseOptimizer import *
 
 """
 This module provides a collection of portfolio optimization techniques 
@@ -38,14 +35,18 @@ Functions:
         Optimizes portfolio weights to achieve a specific financial goal using Monte Carlo simulations.
 """
 
+
 def portfolio_variance(weights, covariance_matrix):
     return cp.quad_form(weights, cp.Constant(covariance_matrix))
+
 
 def mean_return(weights, expected_returns):
     return cp.matmul(weights, expected_returns)
 
+
 def is_positive_semidefinite(matrix: np.ndarray) -> bool:
     return np.all(np.linalg.eigvals(matrix) >= 0)
+
 
 def make_positive_semidefinite(matrix: np.ndarray) -> np.ndarray:
     min_eigenvalue = np.min(np.linalg.eigvals(matrix))
@@ -53,14 +54,14 @@ def make_positive_semidefinite(matrix: np.ndarray) -> np.ndarray:
         matrix += np.eye(matrix.shape[0]) * (-min_eigenvalue + 1e-6)
     return matrix
 
-def mean_variance_optimizer(
-    nodes: List[Any],
-    covariance_matrix: np.ndarray,
-    expected_returns: np.ndarray,
-    weight_bounds: Union[List[Tuple], Tuple] = (0, 1),
-    risk_aversion: float = 0.5
-) -> List[float]:
 
+def mean_variance_optimizer(
+        nodes: List[Any],
+        covariance_matrix: np.ndarray,
+        expected_returns: np.ndarray,
+        weight_bounds: Union[List[Tuple], Tuple] = (0, 1),
+        risk_aversion: float = 0.5
+) -> List[float]:
     def mean_variance_objective(w, cov_matrix, exp_returns, risk_aversion):
         return risk_aversion * portfolio_variance(w, cov_matrix) - mean_return(w, exp_returns)
 
@@ -68,7 +69,8 @@ def mean_variance_optimizer(
     tickers = [node.name for node in nodes]
 
     if covariance_matrix.shape[0] != n_assets or covariance_matrix.shape[1] != n_assets:
-        raise ValueError(f"Covariance matrix dimensions {covariance_matrix.shape} do not match the number of assets ({n_assets}).")
+        raise ValueError(
+            f"Covariance matrix dimensions {covariance_matrix.shape} do not match the number of assets ({n_assets}).")
 
     if not is_positive_semidefinite(covariance_matrix):
         covariance_matrix = make_positive_semidefinite(covariance_matrix)
@@ -83,21 +85,23 @@ def mean_variance_optimizer(
 
     return list(optimizer.clean_weights().values())
 
+
 def equal_weight_optimizer(
-    nodes: List[Any],
-    weight_bounds: Union[List[Tuple], Tuple] = (0, 1)
+        nodes: List[Any],
+        weight_bounds: Union[List[Tuple], Tuple] = (0, 1)
 ) -> List[float]:
     n = len(nodes)
     if n == 0:
         return []
     return [1.0 / n] * n
 
+
 def dynamic_risk_optimizer(
-    nodes: List[Any],
-    covariance_matrix: np.ndarray,
-    risk_tolerance: float = 0.5,
-    goal_period: int = 10,
-    weight_bounds: Union[List[Tuple], Tuple] = (0, 1)
+        nodes: List[Any],
+        covariance_matrix: np.ndarray,
+        risk_tolerance: float = 0.5,
+        goal_period: int = 10,
+        weight_bounds: Union[List[Tuple], Tuple] = (0, 1)
 ) -> List[float]:
     n_assets = len(nodes)
     if n_assets == 0:
@@ -111,11 +115,12 @@ def dynamic_risk_optimizer(
 
     return list(weights)
 
+
 def risk_parity_optimizer(
-    nodes: List[Any],
-    covariance_matrix: np.ndarray,
-    risk_aversion: float = 0.5,
-    weight_bounds: Union[List[Tuple], Tuple] = (0, 1)
+        nodes: List[Any],
+        covariance_matrix: np.ndarray,
+        risk_aversion: float = 0.5,
+        weight_bounds: Union[List[Tuple], Tuple] = (0, 1)
 ) -> List[float]:
     n_assets = len(nodes)
     if n_assets == 0:
@@ -128,21 +133,23 @@ def risk_parity_optimizer(
 
     return list(weights)
 
+
 def goal_based_optimizer(
-    nodes: List[Any],
-    covariance_matrix: np.ndarray,
-    expected_returns: np.ndarray,
-    weight_bounds: Union[List[Tuple], Tuple] = (0, 1),
-    risk_aversion: float = 0.5,
-    goal_amount: float = 1000000,
-    goal_period: int = 10,
-    simulations: int = 1000,
+        nodes: List[Any],
+        covariance_matrix: np.ndarray,
+        expected_returns: np.ndarray,
+        weight_bounds: Union[List[Tuple], Tuple] = (0, 1),
+        risk_aversion: float = 0.5,
+        goal_amount: float = 1000000,
+        goal_period: int = 10,
+        simulations: int = 1000,
 ) -> List[float]:
     n_assets = len(nodes)
     tickers = [node.name for node in nodes]
 
     if covariance_matrix.shape[0] != n_assets or covariance_matrix.shape[1] != n_assets:
-        raise ValueError(f"Covariance matrix dimensions {covariance_matrix.shape} do not match the number of assets ({n_assets}).")
+        raise ValueError(
+            f"Covariance matrix dimensions {covariance_matrix.shape} do not match the number of assets ({n_assets}).")
 
     if not is_positive_semidefinite(covariance_matrix):
         covariance_matrix = make_positive_semidefinite(covariance_matrix)

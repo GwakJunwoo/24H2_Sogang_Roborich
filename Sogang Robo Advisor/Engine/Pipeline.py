@@ -1,18 +1,18 @@
+from typing import List, Tuple
 
-from typing import List, Optional, Tuple, Union, Callable
-from Engine.Tree import *
-from Engine.BaseOptimizer import *
-from Engine.Optimizer import *
-from Engine.Assumption import *
+from .Assumption import *
+from .Optimizer import *
+from .Tree import *
 
 optimizer_inputs = {
     'mean_variance_optimizer': ['expected_returns', 'covariance_matrix'],
     'equal_weight_optimizer': [],
     'dynamic_risk_optimizer': ['covariance_matrix'],
-    'risk_parity_optimizer' : ['covariance_matrix'],
+    'risk_parity_optimizer': ['covariance_matrix'],
     'goal_based_optimizer': ['expected_returns', 'covariance_matrix'],
 
 }
+
 
 class Pipeline:
     """
@@ -35,7 +35,7 @@ class Pipeline:
         _get_nodes_bounds(nodes):
             Retrieves weight bounds for child nodes based on node parameters.
     """
-    
+
     def __init__(self, steps: List[Tuple[str, Callable]], universe: Tree, assumption: AssetAssumption):
         self.steps = steps
         self.universe = universe
@@ -54,21 +54,22 @@ class Pipeline:
 
         allocations = {}
         root_node = self.universe.root
-        self._optimize_node(root_node, 1, allocations, filtered_expected_returns, filtered_covariance_matrix, saa_rebalance_month=month)
+        self._optimize_node(root_node, 1, allocations, filtered_expected_returns, filtered_covariance_matrix,
+                            saa_rebalance_month=month)
         return allocations
 
     def _optimize_node(
-        self,
-        node: Node,
-        depth: int,
-        allocations: Dict[str, float],
-        expected_returns: pd.Series,
-        covariance_matrix: pd.DataFrame,
-        parent_weight: float = 1.0,
-        saa_rebalance_month = 12,
+            self,
+            node: Node,
+            depth: int,
+            allocations: Dict[str, float],
+            expected_returns: pd.Series,
+            covariance_matrix: pd.DataFrame,
+            parent_weight: float = 1.0,
+            saa_rebalance_month=12,
     ) -> None:
         if depth <= len(self.steps):
-            optimizer_name, optimizer_func = self.steps[depth - 1]             
+            optimizer_name, optimizer_func = self.steps[depth - 1]
 
             required_inputs = optimizer_inputs.get(optimizer_func.__name__, [])
             input_args = {}
@@ -123,7 +124,7 @@ class Pipeline:
                 )
 
             else:
-                node_weights = optimizer_func(valid_children, 
+                node_weights = optimizer_func(valid_children,
                                               **input_args,
                                               )
 
@@ -144,7 +145,6 @@ class Pipeline:
             for child_node in node.children:
                 if child_node.name not in valid_child_names:
                     allocations[child_node.name] = 0.0
-
 
     def _get_nodes_bounds(self, nodes: List[Node]) -> List[Tuple]:
         return [node.params['weight_bounds'] for node in nodes]

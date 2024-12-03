@@ -40,6 +40,7 @@ Tree Methods:
         Returns a list of names of all leaf nodes (nodes without children).
 """
 
+
 class Node:
     def __init__(self, name: str, **params: Any):
         self.name = name
@@ -64,7 +65,7 @@ class Tree:
         if parent_node:
             child_node = Node(child_name, **params)
             parent_node.add_child(child_node)
-            self.nodes[child_name] = child_node 
+            self.nodes[child_name] = child_node
             return True
         return False
 
@@ -83,10 +84,10 @@ class Tree:
 
     def get_all_nodes(self) -> List[Node]:
         return list(self.nodes.values())
-    
+
     def get_all_nodes_name(self) -> List:
         return [k.name for k in list(self.nodes.values())][1:]
-    
+
     def get_leaf_nodes(self) -> List[str]:
         leaf_nodes = [node.name for node in self.nodes.values() if not node.children]
         return leaf_nodes

@@ -6,14 +6,15 @@ from Engine.Pipeline import *
 from Engine.Backtest import *
 from Engine.DataReader import *
 from datetime import datetime, timedelta
-import warnings 
+import warnings
 
 warnings.filterwarnings('ignore')
 
+
 def build_investment_tree(codes: list, risk_level: int, df: pd.DataFrame) -> Tree:
     tree = Tree("Universe")
-    
-    if risk_level in [1,2]:  # 안정추구형
+
+    if risk_level in [1, 2]:  # 안정추구형
         bounds = {
             5: (0, 0.15),
             4: (0, 0.4),
@@ -41,7 +42,7 @@ def build_investment_tree(codes: list, risk_level: int, df: pd.DataFrame) -> Tre
     row_code_dict = {}
     for _, row in df.iterrows():
         row_code_dict[row.iloc[0]] = str(row['종목 코드'])
-    
+
     code_info = {}
     for code in codes:
         row = df[df['종목 코드'].astype(str) == str(code)].iloc[0]
@@ -50,7 +51,7 @@ def build_investment_tree(codes: list, risk_level: int, df: pd.DataFrame) -> Tre
             'parent': row['부모'] if not pd.isna(row['부모']) else None,
             'risk': row['투자 가능 대상 여부']
         }
-    
+
     sorted_codes = sorted(codes, key=lambda x: code_info[x]['level'], reverse=True)
     for code in sorted_codes:
         bound = bounds[code_info[code]['risk']]
@@ -59,27 +60,30 @@ def build_investment_tree(codes: list, risk_level: int, df: pd.DataFrame) -> Tre
                 if row_code_dict[code_info[code]['parent']] not in [node.name for node in tree.get_all_nodes()]:
                     tree.insert('Universe', row_code_dict[code_info[code]['parent']], weight_bounds=bound)
                     tree.insert(row_code_dict[code_info[code]['parent']], code, weight_bounds=bound)
-                    
+
                 elif row_code_dict[code_info[code]['parent']] in [node.name for node in tree.get_all_nodes()]:
                     tree.insert(row_code_dict[code_info[code]['parent']], code, weight_bounds=bound)
-                
+
             else:
                 if code not in [node.name for node in tree.get_all_nodes()]:
                     tree.insert('Universe', code, weight_bounds=bound)
                     tree.insert(code, code, weight_bounds=bound)
                 elif code not in [node.name for node in tree.get_all_nodes()]:
                     tree.insert(code, code, weight_bounds=bound)
-                    
+
         elif code_info[code]['level'] == 2:
             tree.insert(code, code, weight_bounds=bound)
-            
-    
+
     tree.draw()
     return tree
 
-def main(codes, risk_level: int = 4, investor_goal:int = 1):
 
-    file_path = 'Sogang Robo Advisor/invest_universe.csv'
+# 사용방법
+# codes: 투자할 종목 리스트
+# risk_level: 투자자의 위험등급 (1~5, 5: 고위험 투자자)
+# investor_goal: 투자자 목표(1: 결혼자금 준비, 2: 노후자금 준비, 3: 장기수익 창출, 4: 목돈마련)
+def main(codes, risk_level: int = 4, investor_goal: int = 1):
+    file_path = './invest_universe.csv'
     universe = pd.read_csv(file_path, encoding='cp949')
 
     stock_dict = {}
@@ -96,14 +100,14 @@ def main(codes, risk_level: int = 4, investor_goal:int = 1):
 
     if '069500' not in assets: assets.append('069500')
 
-    price_data = fetch_data_from_db(assets)
+    price_data = fetch_data_from_db(assets, './financial_data.db')
 
     assumption = AssetAssumption(returns_window=52, covariance_window=52)
 
     ## 투자자 목표 1: 결혼자금 준비
     if investor_goal == 1:
         steps = [
-            ("SAA", dynamic_risk_optimizer), 
+            ("SAA", dynamic_risk_optimizer),
             ("TAA", mean_variance_optimizer),
             ("AP", mean_variance_optimizer)
         ]
@@ -111,7 +115,7 @@ def main(codes, risk_level: int = 4, investor_goal:int = 1):
     ## 투자자 목표 2: 노후자금 준비
     elif investor_goal == 2:
         steps = [
-            ("SAA", risk_parity_optimizer), 
+            ("SAA", risk_parity_optimizer),
             ("TAA", goal_based_optimizer),
             ("AP", mean_variance_optimizer)
         ]
@@ -119,7 +123,7 @@ def main(codes, risk_level: int = 4, investor_goal:int = 1):
     ## 투자자 목표 3 장기 수익 창출
     elif investor_goal == 3:
         steps = [
-            ("SAA", risk_parity_optimizer), 
+            ("SAA", risk_parity_optimizer),
             ("TAA", mean_variance_optimizer),
             ("AP", mean_variance_optimizer)
         ]
@@ -127,13 +131,13 @@ def main(codes, risk_level: int = 4, investor_goal:int = 1):
     ## 투자자 목표 4 목돈 마련
     elif investor_goal == 4:
         steps = [
-            ("SAA", dynamic_risk_optimizer), 
+            ("SAA", dynamic_risk_optimizer),
             ("TAA", goal_based_optimizer),
             ("AP", mean_variance_optimizer)
         ]
 
     pipe = Pipeline(steps, tree, assumption)
-    
+
     today = datetime.today().strftime("%Y-%m-%d")
     prev_date = (datetime.today() - timedelta(days=252 * 5)).strftime("%Y-%m-%d")
     rebalance_dates = pd.date_range(prev_date, today, freq='M')
@@ -151,10 +155,5 @@ def main(codes, risk_level: int = 4, investor_goal:int = 1):
     return eval_metrix
 
 
-# 사용방법
-"""
-codes: 투자할 종목 리스트
-risk_level: 투자자의 위험등급 (1~5, 5: 고위험 투자자)
-investor_goal: 투자자 목표(1: 결혼자금 준비, 2: 노후자금 준비, 3: 장기수익 창출, 4: 목돈마련)
-"""
-# main(codes=['069500', '139260','161510','273130','439870','251340','114260'], risk_level=4, investor_goal=3)
+if __name__ == '__main__':
+    main(codes=['069500', '139260', '161510', '273130', '439870', '251340', '114260'], risk_level=4, investor_goal=3)

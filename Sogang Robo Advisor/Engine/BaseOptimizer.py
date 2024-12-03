@@ -3,6 +3,7 @@ import numpy as np
 import cvxpy as cp
 import collections
 
+
 class BaseOptimizer:
     """
     BaseOptimizer is a foundational class for portfolio optimization. It provides 

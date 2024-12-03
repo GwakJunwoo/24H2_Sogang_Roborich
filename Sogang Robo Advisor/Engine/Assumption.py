@@ -7,7 +7,7 @@ warnings.filterwarnings('ignore')
 
 class AssetAssumption:
     """
-    AssetAssumption is a utility class for calculating financial assumptions necessary 
+    AssetAssumption is a utility class for calculating financial assumptions necessary
     for portfolio optimization. The class provides methods for computing expected returns, 
     CAPM-based expected returns, and covariance matrices using historical price data.
 
@@ -25,7 +25,7 @@ class AssetAssumption:
         calculate_covariance(price_data):
             Computes the covariance matrix for asset returns using historical data.
     """
-    
+
     def __init__(self, returns_window: int = 52, covariance_window: int = 52):
         self.returns_window = returns_window
         self.covariance_window = covariance_window
@@ -69,7 +69,7 @@ class AssetAssumption:
         weekly_prices = price_data.resample('W').last()
         weekly_returns = weekly_prices.pct_change().astype(np.float32)
 
-        market_returns = price_data.iloc[:,0].resample('W').last().pct_change().astype(np.float32)
+        market_returns = price_data.iloc[:, 0].resample('W').last().pct_change().astype(np.float32)
 
         betas = []
         for col in weekly_returns.columns:
@@ -88,7 +88,6 @@ class AssetAssumption:
 
         capm_returns = np.nan_to_num(capm_returns, nan=-99999)
         return pd.Series(capm_returns, index=price_data.columns)
-
 
     def calculate_covariance(self, price_data: pd.DataFrame) -> pd.DataFrame:
         weekly_prices = price_data.resample('W').last()

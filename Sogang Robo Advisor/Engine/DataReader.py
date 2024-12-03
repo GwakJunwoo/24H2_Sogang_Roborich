@@ -17,8 +17,9 @@ Functions:
         Retrieves historical price data for specific tickers from a local SQLite database.
 """
 
+
 def fetch_close_prices():
-    start_date='2000-01-01'
+    start_date = '2000-01-01'
     end_date = datetime.today().strftime('%y-%m-%d')
 
     file_path = 'Sogang Robo Advisor/invest_universe.csv'
@@ -32,7 +33,7 @@ def fetch_close_prices():
     tickers = tickers_data['종목 코드']
 
     all_close_prices = pd.DataFrame()
-    
+
     for ticker in tickers:
         try:
             df = fdr.DataReader(ticker, start=start_date, end=end_date)
@@ -42,18 +43,16 @@ def fetch_close_prices():
             all_close_prices = pd.concat([all_close_prices, close_prices], axis=1)
         except Exception as e:
             print(f"Error fetching data for {ticker}: {e}")
-    
+
     return all_close_prices
+
 
 def fetch_data_from_db(tickers, db_path='Sogang Robo Advisor/financial_data.db'):
     try:
         conn = sqlite3.connect(db_path)
 
         columns = ', '.join([f'"{ticker}"' for ticker in tickers])
-        query = f"""
-        SELECT Date, {columns}
-        FROM db
-        """
+        query = f"SELECT Date, {columns} FROM db"
 
         df = pd.read_sql_query(query, conn, index_col='Date')
         conn.close()
